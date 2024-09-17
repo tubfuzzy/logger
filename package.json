@@ -4,6 +4,10 @@
   "description": "",
   "main": "dist/public_api.js",
   "types": "dist/public_api.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
   "scripts": {
     "build": "npx tsc",
     "test": "jest"
