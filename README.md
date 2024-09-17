@@ -1,3 +1,27 @@
+# Custom Logger
+
+A flexible and configurable logging library for Node.js applications, built on top of [Winston](https://github.com/winstonjs/winston). This logger supports various log levels, multiple transports (console and file), and customizable log formats.
+
+## Features
+
+- Easy-to-use API for logging at different levels (Info, Error, etc.)
+- Supports console and file transports
+- Configurable log formats and destinations
+- Detailed structured logging for tracking application activity
+
+## Installation
+
+To use the custom logger in your project, you can install it directly from a `.tgz` file or clone it into your project.
+
+### Option 1: Install from `.tgz` File
+
+1. Download or build the `.tgz` file for the custom logger.
+
+2. Install the package from the `.tgz` file:
+
+   ```bash
+   npm install /path/to/custom-logger-1.0.0.tgz
+   
 ## How to Use
 
 ### 1. Import and Configure
