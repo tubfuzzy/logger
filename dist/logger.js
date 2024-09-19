@@ -28,7 +28,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Logger = void 0;
 const logLevels_1 = require("./logLevels");
-const moment_timezone_1 = __importDefault(require("moment-timezone"));
 const os = __importStar(require("os"));
 const winston_1 = __importDefault(require("winston"));
 class Logger {
@@ -41,10 +40,12 @@ class Logger {
             transports.push(new winston_1.default.transports.Console());
         }
         if (config.transports?.file) {
-            transports.push(new winston_1.default.transports.File({ filename: config.transports.file.filename }));
+            transports.push(new winston_1.default.transports.File({
+                filename: config.transports.file.filename,
+            }));
         }
         this.winstonLogger = winston_1.default.createLogger({
-            level: 'info',
+            level: "info",
             format: winston_1.default.format.combine(winston_1.default.format.timestamp(), winston_1.default.format.json()),
             transports: transports,
         });
@@ -60,51 +61,95 @@ class Logger {
         this.logLevel = logLevels_1.LogLevel.ERROR;
         return this;
     }
+    EDR(logParameters) {
+        const log = this.generateEDRLog(logParameters);
+        this.winstonLogger.log("info", log);
+        return this;
+    }
+    EDREndpoint(logParameters) {
+        const log = this.generateEDREndpointLog(logParameters);
+        this.winstonLogger.log("info", log);
+        return this;
+    }
+    CDR(logParameters) {
+        const log = this.generateCDRLog(logParameters);
+        this.winstonLogger.log("info", log);
+        return this;
+    }
+    Exception(params) {
+        const log = this.generateExceptionLog(params);
+        this.winstonLogger.log("error", log);
+        return this;
+    }
     generateCDRLog(params) {
         return {
-            systemTimestamp: `${moment_timezone_1.default.tz('Asia/Bangkok').format('DD/MM/YYYY HH:mm:ss')}.${new Date().getMilliseconds()}`,
-            logType: 'Summary',
+            systemTimestamp: new Date().toISOString(),
+            logType: "Detail",
             namespace: this.namespace,
             applicationName: this.applicationName,
             containerId: os.hostname(),
-            sessionId: params.sessionId || '',
-            tid: params.tid || '',
-            identity: params.identity || '',
-            cmdName: params.cmdName || '',
-            resultCode: params.resultCode || '',
-            resultDesc: params.resultDesc || '',
-            reqTimestamp: params.reqTimestamp || '',
-            resTimestamp: params.resTimestamp || '',
-            usageTime: params.usageTime || 0,
+            sessionId: params.sessionId,
+            tid: params.tid,
+            identity: params.identity,
+            cmdName: params.cmdName,
+            resultCode: params.resultCode,
+            resultDesc: params.resultDesc,
+            reqTimestamp: params.reqTimestamp,
+            resTimestamp: params.resTimestamp,
+            usageTime: params.usageTime,
             custom: {
-                endPointSumary: params.endPointSumary || '',
+                endPointSummary: params.endPointSumary.map((summary) => ({
+                    no: summary.no,
+                    endPointName: summary.endPointName,
+                    endPointURL: summary.endPointURL,
+                    responseStatus: summary.responseStatus,
+                    processTime: summary.processTime,
+                })),
             },
         };
     }
     generateEDRLog(params) {
         return {
-            systemTimestamp: `${moment_timezone_1.default.tz('Asia/Bangkok').format('DD/MM/YYYY HH:mm:ss')}.${new Date().getMilliseconds()}`,
-            logType: 'Detail',
-            logLevel: this.logLevel,
+            systemTimestamp: new Date().toISOString(),
+            logType: "Detail",
+            logLevel: "INFO",
             namespace: this.namespace,
             applicationName: this.applicationName,
             containerId: os.hostname(),
-            sessionId: params.sessionId || '',
-            tid: params.tid || '',
+            sessionId: params.sessionId,
+            tid: params.tid,
             custom1: {
-                requestObject: JSON.stringify({
-                    method: params.method,
-                    url: params.url,
-                    headers: params.headers,
-                    queryString: params.queryString,
-                    routeParameters: params.routeParameters,
-                    body: params.body,
-                }),
-                responseObject: JSON.stringify(params.responseObject),
+                httpResponse: params.err?.toString() || null,
+                requestObject: params.body,
+                responseObject: params.responseObject,
                 activityLog: {
-                    startTime: params.startTime || '',
-                    endTime: params.endTime || '',
-                    processTime: params.processTime || 0,
+                    startTime: params.startTime,
+                    endTime: params.endTime,
+                    processTime: params.processTime,
+                },
+            },
+            custom2: null,
+        };
+    }
+    generateEDREndpointLog(params) {
+        return {
+            systemTimestamp: new Date().toISOString(),
+            logType: "Detail",
+            logLevel: "INFO",
+            namespace: this.namespace,
+            applicationName: this.applicationName,
+            containerId: os.hostname(),
+            sessionId: params.sessionId,
+            tid: params.tid,
+            custom1: {
+                endPointName: params.cmdName,
+                httpResponse: params.err?.toString() || null,
+                requestObject: params.body,
+                responseObject: params.responseObject,
+                activityLog: {
+                    startTime: params.startTime,
+                    endTime: params.endTime,
+                    processTime: params.processTime,
                 },
             },
             custom2: null,
@@ -112,40 +157,23 @@ class Logger {
     }
     generateExceptionLog(params) {
         return {
-            systemTimestamp: `${moment_timezone_1.default
-                .tz('Asia/Bangkok')
-                .format('DD/MM/YYYY HH:mm:ss')}.${new Date().getMilliseconds()}`,
-            logType: 'Detail',
-            logLevel: 'error',
+            systemTimestamp: new Date().toISOString(),
+            logType: "Detail",
+            logLevel: "Error",
             namespace: this.namespace,
             applicationName: this.applicationName,
             containerId: os.hostname(),
-            sessionId: params.sessionId || '',
-            tid: params.tid || '',
+            sessionId: params.sessionId,
+            tid: params.tid,
             custom1: {
                 exception: {
-                    type: 'LogException',
-                    message: params.err?.toString() || '',
+                    type: "LogException",
+                    message: params.err?.toString() || "",
                     source: this.applicationName,
-                    stacktrace: params.stacktrace || '',
+                    stacktrace: params.stacktrace || "",
                 },
             },
         };
-    }
-    EDR(logParameters) {
-        const log = this.generateEDRLog(logParameters);
-        this.winstonLogger.log('info', log);
-        return this;
-    }
-    CDR(logParameters) {
-        const log = this.generateCDRLog(logParameters);
-        this.winstonLogger.log('info', log);
-        return this;
-    }
-    Exception(logParameters) {
-        const log = this.generateExceptionLog(logParameters);
-        this.winstonLogger.log('error', log);
-        return this;
     }
 }
 exports.Logger = Logger;
