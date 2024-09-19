@@ -119,7 +119,7 @@ class Logger {
             sessionId: params.sessionId,
             tid: params.tid,
             custom1: {
-                httpResponse: params.err?.toString() || null,
+                httpResponse: params.httpResponse,
                 requestObject: params.body,
                 responseObject: params.responseObject,
                 activityLog: {
@@ -143,7 +143,7 @@ class Logger {
             tid: params.tid,
             custom1: {
                 endPointName: params.cmdName,
-                httpResponse: params.err?.toString() || null,
+                httpResponse: params.httpResponse,
                 requestObject: params.body,
                 responseObject: params.responseObject,
                 activityLog: {

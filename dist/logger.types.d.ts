@@ -11,24 +11,12 @@ export interface LogCDR {
     tid: string;
     identity: string;
     cmdName: string;
-    reqTimestamp: string;
     resultCode: string;
     resultDesc: string;
+    reqTimestamp: string;
     resTimestamp: string;
     usageTime: number;
     endPointSumary: EndPointSumary[];
-    err: Error;
-    stacktrace: string;
-    processTime: number;
-    endTime: string;
-    startTime: string;
-    responseObject: any;
-    method: string;
-    url: string;
-    headers: string;
-    queryString: string;
-    routeParameters: string;
-    body: string;
 }
 export interface LogEDR {
     sessionId: string;
@@ -40,19 +28,12 @@ export interface LogEDR {
     resultDesc: string;
     resTimestamp: string;
     usageTime: number;
-    endPointSumary: EndPointSumary[];
-    err: Error;
-    stacktrace: string;
+    body: string;
+    responseObject: string;
     processTime: number;
     endTime: string;
     startTime: string;
-    responseObject: string;
-    method: string;
-    url: string;
-    headers: string;
-    queryString: string;
-    routeParameters: string;
-    body: string;
+    httpResponse: string;
 }
 export interface LogEDREndpoint {
     sessionId: string;
@@ -64,43 +45,18 @@ export interface LogEDREndpoint {
     resultDesc: string;
     resTimestamp: string;
     usageTime: number;
-    endPointSumary: EndPointSumary[];
-    err: Error;
-    stacktrace: string;
+    responseObject: any;
+    body: string;
     processTime: number;
     endTime: string;
     startTime: string;
-    responseObject: any;
-    method: string;
-    url: string;
-    headers: string;
-    queryString: string;
-    routeParameters: string;
-    body: string;
+    httpResponse: string;
 }
 export interface LogException {
     sessionId: string;
     tid: string;
-    identity: string;
-    cmdName: string;
-    reqTimestamp: string;
-    resultCode: string;
-    resultDesc: string;
-    resTimestamp: string;
-    usageTime: number;
-    endPointSumary: EndPointSumary[];
     err: Error;
     stacktrace: string;
-    processTime: number;
-    endTime: string;
-    startTime: string;
-    responseObject: any;
-    method: string;
-    url: string;
-    headers: string;
-    queryString: string;
-    routeParameters: string;
-    body: string;
 }
 export interface LoggerConfig {
     applicationName: string;
