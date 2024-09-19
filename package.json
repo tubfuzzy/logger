@@ -1,6 +1,6 @@
 {
   "name": "logger",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "dist/public_api.js",
   "types": "dist/public_api.d.ts",

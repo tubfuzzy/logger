@@ -1,10 +1,19 @@
-import { LogLevel } from './logLevels';
-import moment from 'moment-timezone';
-import * as os from 'os';
-import winston from 'winston';
-import { CDRLog, EDRLog, ExceptionLog } from './logInterfaces';
-import { LoggerConfig, LogParameters } from './logger.types';
-
+import { LogLevel } from "./logLevels";
+import * as os from "os";
+import winston from "winston";
+import {
+  FormatLogCDR,
+  FormatLogEDR,
+  FormatLogEDREndpoint,
+  FormatExceptionLog,
+} from "./logInterfaces";
+import {
+  LogCDR,
+  LogEDREndpoint,
+  LogEDR,
+  LogException,
+  LoggerConfig,
+} from "./logger.types";
 
 export class Logger {
   private applicationName: string;
@@ -24,11 +33,15 @@ export class Logger {
     }
 
     if (config.transports?.file) {
-      transports.push(new winston.transports.File({ filename: config.transports.file.filename }));
+      transports.push(
+        new winston.transports.File({
+          filename: config.transports.file.filename,
+        })
+      );
     }
 
     this.winstonLogger = winston.createLogger({
-      level: 'info',
+      level: "info",
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.json()
@@ -37,7 +50,7 @@ export class Logger {
     });
   }
 
-  Info(logString?: string, params?: Partial<LogParameters>) {
+  Info(logString?: string, params?: any) {
     this.logLevel = LogLevel.INFO;
     if (logString && params) {
       this.winstonLogger.info(logString, params);
@@ -50,96 +63,125 @@ export class Logger {
     return this;
   }
 
-  private generateCDRLog(params: Partial<LogParameters>): CDRLog {
+  EDR(logParameters: LogEDR) {
+    const log = this.generateEDRLog(logParameters);
+    this.winstonLogger.log("info", log);
+    return this;
+  }
+
+  EDREndpoint(logParameters: LogEDREndpoint) {
+    const log = this.generateEDREndpointLog(logParameters);
+    this.winstonLogger.log("info", log);
+    return this;
+  }
+
+  CDR(logParameters: LogCDR) {
+    const log = this.generateCDRLog(logParameters);
+    this.winstonLogger.log("info", log);
+    return this;
+  }
+
+  Exception(params: LogException) {
+    const log = this.generateExceptionLog(params);
+    this.winstonLogger.log("error", log);
+    return this;
+  }
+
+  private generateCDRLog(params: LogCDR): FormatLogCDR {
     return {
-      systemTimestamp: `${moment.tz('Asia/Bangkok').format('DD/MM/YYYY HH:mm:ss')}.${new Date().getMilliseconds()}`,
-      logType: 'Summary',
+      systemTimestamp: new Date().toISOString(),
+      logType: "Detail",
       namespace: this.namespace,
       applicationName: this.applicationName,
       containerId: os.hostname(),
-      sessionId: params.sessionId || '',
-      tid: params.tid || '',
-      identity: params.identity || '',
-      cmdName: params.cmdName || '',
-      resultCode: params.resultCode || '',
-      resultDesc: params.resultDesc || '',
-      reqTimestamp: params.reqTimestamp || '',
-      resTimestamp: params.resTimestamp || '',
-      usageTime: params.usageTime || 0,
+      sessionId: params.sessionId,
+      tid: params.tid,
+      identity: params.identity,
+      cmdName: params.cmdName,
+      resultCode: params.resultCode,
+      resultDesc: params.resultDesc,
+      reqTimestamp: params.reqTimestamp,
+      resTimestamp: params.resTimestamp,
+      usageTime: params.usageTime,
       custom: {
-        endPointSumary: params.endPointSumary || '',
+        endPointSummary: params.endPointSumary.map((summary) => ({
+          no: summary.no,
+          endPointName: summary.endPointName,
+          endPointURL: summary.endPointURL,
+          responseStatus: summary.responseStatus,
+          processTime: summary.processTime,
+        })),
       },
     };
   }
 
-  private generateEDRLog(params: Partial<LogParameters>): EDRLog {
+  private generateEDRLog(params: LogEDR): FormatLogEDR {
     return {
-      systemTimestamp: `${moment.tz('Asia/Bangkok').format('DD/MM/YYYY HH:mm:ss')}.${new Date().getMilliseconds()}`,
-      logType: 'Detail',
-      logLevel: this.logLevel,
+      systemTimestamp: new Date().toISOString(),
+      logType: "Detail",
+      logLevel: "INFO",
       namespace: this.namespace,
       applicationName: this.applicationName,
       containerId: os.hostname(),
-      sessionId: params.sessionId || '',
-      tid: params.tid || '',
+      sessionId: params.sessionId,
+      tid: params.tid,
       custom1: {
-        requestObject: JSON.stringify({
-          method: params.method,
-          url: params.url,
-          headers: params.headers,
-          queryString: params.queryString,
-          routeParameters: params.routeParameters,
-          body: params.body,
-        }),
-        responseObject: JSON.stringify(params.responseObject),
+        httpResponse: params.err?.toString() || null,
+        requestObject: params.body,
+        responseObject: params.responseObject,
         activityLog: {
-          startTime: params.startTime || '',
-          endTime: params.endTime || '',
-          processTime: params.processTime || 0,
+          startTime: params.startTime,
+          endTime: params.endTime,
+          processTime: params.processTime,
         },
       },
       custom2: null,
     };
   }
 
-  private generateExceptionLog(params: Partial<LogParameters>): ExceptionLog {
+  private generateEDREndpointLog(params: LogEDREndpoint): FormatLogEDREndpoint {
     return {
-        systemTimestamp: `${moment
-            .tz('Asia/Bangkok')
-            .format('DD/MM/YYYY HH:mm:ss')}.${new Date().getMilliseconds()}`,
-        logType: 'Detail',
-        logLevel: 'error',
-        namespace: this.namespace,
-        applicationName: this.applicationName,
-        containerId: os.hostname(),
-        sessionId: params.sessionId || '',
-        tid: params.tid || '',
-        custom1: {
-            exception: {
-                type: 'LogException',
-                message: params.err?.toString() || '',
-                source: this.applicationName,
-                stacktrace: params.stacktrace || '',
-            },
+      systemTimestamp: new Date().toISOString(),
+      logType: "Detail",
+      logLevel: "INFO",
+      namespace: this.namespace,
+      applicationName: this.applicationName,
+      containerId: os.hostname(),
+      sessionId: params.sessionId,
+      tid: params.tid,
+      custom1: {
+        endPointName: params.cmdName,
+        httpResponse: params.err?.toString() || null,
+        requestObject: params.body,
+        responseObject: params.responseObject,
+        activityLog: {
+          startTime: params.startTime,
+          endTime: params.endTime,
+          processTime: params.processTime,
         },
+      },
+      custom2: null,
     };
   }
 
-  EDR(logParameters: Partial<LogParameters>) {
-    const log = this.generateEDRLog(logParameters);
-    this.winstonLogger.log('info', log);
-    return this;
-  }
-
-  CDR(logParameters: Partial<LogParameters>) {
-    const log = this.generateCDRLog(logParameters);
-    this.winstonLogger.log('info', log);
-    return this;
-  }
-
-  Exception(logParameters: Partial<LogParameters>) {
-    const log = this.generateExceptionLog(logParameters);
-    this.winstonLogger.log('error', log);
-    return this;
+  private generateExceptionLog(params: LogException): FormatExceptionLog {
+    return {
+      systemTimestamp: new Date().toISOString(),
+      logType: "Detail",
+      logLevel: "Error",
+      namespace: this.namespace,
+      applicationName: this.applicationName,
+      containerId: os.hostname(),
+      sessionId: params.sessionId,
+      tid: params.tid,
+      custom1: {
+        exception: {
+          type: "LogException",
+          message: params.err?.toString() || "",
+          source: this.applicationName,
+          stacktrace: params.stacktrace || "",
+        },
+      },
+    };
   }
 }

@@ -1,5 +1,5 @@
 import { Logger } from '../src/logger'; // Adjust path to the Logger class
-import { LoggerConfig } from '../src/logger.types';
+import { LoggerConfig, LogCDR, LogEDR, LogEDREndpoint, LogException } from '../src/logger.types';
 import { LogLevel } from '../src/logLevels';
 import winston from 'winston';
 
@@ -13,6 +13,7 @@ jest.mock('winston', () => {
   
   const mTransports = {
     Console: jest.fn(),
+    File: jest.fn()
   };
 
   const mCreateLogger = {
@@ -64,57 +65,108 @@ describe('Logger', () => {
   });
 
   it('should generate and log EDR correctly', () => {
-    const logParams = {
+    const logParams: LogEDR = {
       sessionId: '1234',
       tid: '5678',
+      identity: '',
+      cmdName: 'TestCommand',
+      reqTimestamp: '2024-01-01T00:00:00Z',
+      resultCode: '200',
+      resultDesc: 'Success',
+      resTimestamp: '2024-01-01T00:01:00Z',
+      usageTime: 1000,
+      endPointSumary: [],
+      err: new Error('Test error'),
+      stacktrace: 'Error stack trace',
+      processTime: 60000,
+      endTime: '2024-01-01T00:01:00Z',
+      startTime: '2024-01-01T00:00:00Z',
+      responseObject: JSON.stringify({}),
       method: 'GET',
       url: '/api/test',
       headers: '{}',
       queryString: '{}',
       routeParameters: '{}',
       body: '{}',
-      responseObject: '{}',
-      startTime: '2024-01-01T00:00:00Z',
-      endTime: '2024-01-01T00:01:00Z',
-      processTime: 60000,
     };
+
     logger.EDR(logParams);
     expect(winstonLogger.log).toHaveBeenCalledWith('info', expect.objectContaining({
       logType: 'Detail',
-      logLevel: LogLevel.INFO,
+      logLevel: 'INFO',
     }));
   });
 
   it('should generate and log CDR correctly', () => {
-    const logParams = {
+    const logParams: LogCDR = {
       sessionId: '1234',
       tid: '5678',
+      identity: '',
       cmdName: 'TestCommand',
       reqTimestamp: '2024-01-01T00:00:00Z',
-      resTimestamp: '2024-01-01T00:01:00Z',
       resultCode: '200',
       resultDesc: 'Success',
+      resTimestamp: '2024-01-01T00:01:00Z',
       usageTime: 1000,
-      endPointSumary: 'summary',
+      endPointSumary: [
+        {
+          no: 1,
+          endPointName: 'Endpoint1',
+          endPointURL: 'http://example.com',
+          responseStatus: '200 OK',
+          processTime: 50
+        }
+      ],
+      err: new Error('Test error'),
+      stacktrace: 'Error stack trace',
+      processTime: 1000,
+      endTime: '2024-01-01T00:01:00Z',
+      startTime: '2024-01-01T00:00:00Z',
+      responseObject: {},
+      method: 'GET',
+      url: '/api/test',
+      headers: '{}',
+      queryString: '{}',
+      routeParameters: '{}',
+      body: '{}',
     };
 
     logger.CDR(logParams);
     expect(winstonLogger.log).toHaveBeenCalledWith('info', expect.objectContaining({
-      logType: 'Summary',
+      logType: 'Detail',
     }));
   });
 
   it('should generate and log Exception correctly', () => {
-    const logParams = {
+    const logParams: LogException = {
       sessionId: '1234',
+      tid: '5678',
+      identity: '',
+      cmdName: 'TestCommand',
+      reqTimestamp: '2024-01-01T00:00:00Z',
+      resultCode: '500',
+      resultDesc: 'Error',
+      resTimestamp: '2024-01-01T00:01:00Z',
+      usageTime: 1000,
+      endPointSumary: [],
       err: new Error('Test error'),
       stacktrace: 'Error stack trace',
+      processTime: 1000,
+      endTime: '2024-01-01T00:01:00Z',
+      startTime: '2024-01-01T00:00:00Z',
+      responseObject: {},
+      method: 'GET',
+      url: '/api/test',
+      headers: '{}',
+      queryString: '{}',
+      routeParameters: '{}',
+      body: '{}',
     };
 
     logger.Exception(logParams);
     expect(winstonLogger.log).toHaveBeenCalledWith('error', expect.objectContaining({
       logType: 'Detail',
-      logLevel: LogLevel.ERROR,
+      logLevel: 'Error',
       custom1: expect.objectContaining({
         exception: expect.objectContaining({
           message: 'Error: Test error',
